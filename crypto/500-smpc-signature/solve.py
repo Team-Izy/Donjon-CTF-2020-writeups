@@ -15,7 +15,6 @@ import re
 import fastecdsa.curve
 import fastecdsa.point
 
-
 SECP256K1_CURVE = fastecdsa.curve.secp256k1
 SECP256K1_ORDER = SECP256K1_CURVE.q
 
