@@ -138,7 +138,7 @@ So each pattern corresponds to an execution path in the loop. Matching patterns 
 Last observation, at the end of the algorithm, we know that `a = 0` (stop condition of the loop) and that `b = gcd(y, m) = 1` (because `m` is prime, see later). With these pieces of information, we can easily inverse the execution of the algorithm and recover the inverted value `y` from a known sequence of patterns.
 
 ```python
-def inv_gcd_from_trace(trace, m):
+def inv_gcd_from_trace(trace):
     a = 0
     b = 1
     for ch in trace[::-1]:
@@ -164,12 +164,12 @@ The point multiplication at line 3 is performed using the famous double-and-add 
 
 ![](./imgs/alg2.png "double-and-add algorithm")
 
-For performance reasons, and as stated in the challenge information, the `R` point is represented in the Jacobian coordinate system during the scalar-multiplication, i.e. are given three coordinates : `(x * Z**2, y * Z**3, Z)`, with `(x,y)` being the point coordinates in the affine coordinate system.
+For performance reasons, and as stated in the challenge information, the `R` point is represented in the Jacobian coordinate system during the scalar-multiplication, i.e. are given three coordinates : `(x * Z**2, y * Z**3, Z)`, with `(x,y)` being the point's coordinates in the affine coordinate system.
 
-In order to get back affine coordinate (`(X / Z**2, Y / Z**3)`, with `(X,Y,Z)` the point in Jacobian coordinates), an inversion of `Z` modulo `p` (the prime of the curve's field) must be done: this is what has been captured.
+In order to get back affine coordinates (`(X / Z**2, Y / Z**3)`, with `(X,Y,Z)` the point in Jacobian coordinates), an inversion of `Z` modulo `p` (the prime of the curve's field) must be done (to perform the division by `Z**2` and `Z**3`): this is this inversion, using the Binary Extended Euclid Algorithm, that has been captured in the given power traces.
 
-In conclusion, at this point, we are able to compute the `Z` coordinate of the `R` point computed at line 3 of the ECDSA signature algorithm. This will allow us to retrieve information about some bits of the `k` used in the scalar multiplication.
+In conclusion, at this point, we are able to compute the `Z` coordinate of the `R` point computed at line 3 of the ECDSA signature algorithm. This will allow us to retrieve some bits of the `k` nonces used in the scalar multiplications.
 
 
-## Extract bits on `k`
+## Extract bits from `k`
 *In progress*
