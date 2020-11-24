@@ -125,7 +125,7 @@ Given the information given in the challenge, the algorithm corresponding to the
 We can notice two important facts:
 * There are exactly 3 possible paths inside the loop :
   * We have identified 3 patterns in our traces
-* The number of loop iteration is variable (depends on the inverted value `a`)
+* The number of loop iteration is variable (depends on the inverted value `y`)
   * Interesting parts of our trace vary in length
 
 So each pattern corresponds to an execution path in the loop. Matching patterns and paths is quite easy :
