@@ -125,7 +125,7 @@ Given the information given in the challenge, the algorithm corresponding to the
 We can notice two important facts:
 * There are exactly 3 possible paths inside the loop :
   * We have identified 3 patterns in our traces
-* The number of loop iteration is variable (depends on the inverted value `y`)
+* The number of loop iteration is variable (depends on the inverted value `a`)
   * Interesting parts of our trace vary in length
 
 So each pattern corresponds to an execution path in the loop. Matching patterns and paths is quite easy :
@@ -138,7 +138,7 @@ So each pattern corresponds to an execution path in the loop. Matching patterns 
 Last observation, at the end of the algorithm, we know that `a = 0` (stop condition of the loop) and that `b = gcd(y, m) = 1` (because `m` is prime, see later). With these pieces of information, we can easily inverse the execution of the algorithm and recover the inverted value `y` from a known sequence of patterns.
 
 ```python
-def inv_gcd_from_trace(trace):
+def inv_gcd_from_trace(trace, m):
     a = 0
     b = 1
     for ch in trace[::-1]:
@@ -164,12 +164,43 @@ The point multiplication at line 3 is performed using the famous double-and-add 
 
 ![](./imgs/alg2.png "double-and-add algorithm")
 
-For performance reasons, and as stated in the challenge information, the `R` point is represented in the Jacobian coordinate system during the scalar-multiplication, i.e. are given three coordinates : `(x * Z**2, y * Z**3, Z)`, with `(x,y)` being the point's coordinates in the affine coordinate system.
+For performance reasons, and as stated in the challenge information, the `R` point is represented in the Jacobian coordinate system during the scalar-multiplication, i.e. are given three coordinates : `(x * Z**2, y * Z**3, Z)`, with `(x,y)` being the point coordinates in the affine coordinate system.
 
-In order to get back affine coordinates (`(X / Z**2, Y / Z**3)`, with `(X,Y,Z)` the point in Jacobian coordinates), an inversion of `Z` modulo `p` (the prime of the curve's field) must be done (to perform the division by `Z**2` and `Z**3`): this is this inversion, using the Binary Extended Euclid Algorithm, that has been captured in the given power traces.
+In order to get back affine coordinate (`(X / Z**2, Y / Z**3)`, with `(X,Y,Z)` the point in Jacobian coordinates), an inversion of `Z` modulo `p` (the prime of the curve's field) must be done: this is what has been captured.
 
-In conclusion, at this point, we are able to compute the `Z` coordinate of the `R` point computed at line 3 of the ECDSA signature algorithm. This will allow us to retrieve some bits of the `k` nonces used in the scalar multiplications.
+In conclusion, at this point, we are able to compute the `Z` coordinate of the `R` point computed at line 3 of the ECDSA signature algorithm. This will allow us to retrieve information about some bits of the `k` used in the scalar multiplication.
 
 
-## Extract bits from `k`
-*In progress*
+## Extract bits on `k`
+
+Now that we have the `Z` coordinate of the `R` point at the end of the double-and-add algorithm, let's try to infer information on the scalar `k`.
+
+### "Double" algorithm
+
+Given the information in the challenge, we can first take a look at the algorithm doubling a point represented in the Jacobian coordinate system:
+
+![](./imgs/alg4.png "double algorithm in Jacobian system")
+
+`(X1, Y1, Z1)` being the coordinates of the point that is doubled and `(X3, Y3, Z3)` the resulting point.
+
+As we know the value `Z` at the end of the double-and-add algorithm, we try to express `Z1` (the value before the double operation) as a function of `Z3`, expressing `X1` and `Y1` (Jacobian coordinates) as functions of the affine coordinates `(x1, y1)`:
+```
+Z3 = (Y1 + Z1)**2 - YY - ZZ
+Z3 = ((y1 * Z1**3)  + Z1)**2 - (y1 * Z1**3)**2 - Z1**2
+Z3 = (y1 * Z1**3)**2 + 2*(y1 * Z1**3)*Z1 + Z1**2 - (y1 * Z1**3)**2 - Z1**2
+Z3 = 2*(y1 * Z1**3)*Z1
+Z3 = 2 * y1 * Z1**4
+Z1 = fourth_root(Z3 / (2 * y1))
+```
+
+Let's denote by `Z_i` the `Z` coordinate of the `R_i` point after loop iteration `i` in the double-and-add algorithm: if `k_i = 0`, then `fourth_root(Z_i / (2 * y_i))` must have a solution. By logical equivalence, if `fourth_root(Zi / (2 * y1))` does not have a solution, then `k_i = 1`.
+
+In 
+
+### "Add" algorithm
+
+We do the same deductions for the "add" algorithm, represented bellow:
+
+![](./imgs/alg3.png "add algorithm in Jacobian system")
+
+`(X1, Y1, Z1)` and `(X2, Y2, Z2)` being the coordinates of the points that are added together, and `(X3, Y3, Z3)` the resulting point.
