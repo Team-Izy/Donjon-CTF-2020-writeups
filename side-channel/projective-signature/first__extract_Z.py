@@ -63,7 +63,7 @@ def extract_Z():
                 assert np.array_equal(leak[t:t+len(pattern_stop)], pattern_stop)
                 break
         Z_list.append(inv_gcd_from_trace(s))
-    print(Z_list)
+    #print(Z_list)
     Z_list = np.array(Z_list)
     np.save("Z.npy", Z_list)
 
@@ -79,7 +79,7 @@ def export_Z():
         s = int(bytes(v["ECDSA_s"].tolist()).hex(), 16)
         Z_and_points.append(dict(Z=Z0_l[i], P=(Px,Py), h=h, r=r, s=s))
     with open("Z_and_points.dict", "w") as f:
-        f.write(Z_and_points)
+        f.write(repr(Z_and_points))
 
 if __name__ == "__main__":
     extract_Z()

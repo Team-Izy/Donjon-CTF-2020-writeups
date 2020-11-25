@@ -154,6 +154,7 @@ def inv_gcd_from_trace(trace, m):
     return a
 ```
 
+This is implemented in `first__extract_Z.py`.
 
 ### Remind me, why have we done that ?
 As a reminder, the ECDSA signature algorithm is the following:
@@ -186,16 +187,18 @@ Given the information in the challenge, we can first take a look at the algorith
 As we know the value `Z` at the end of the double-and-add algorithm, we try to express `Z1` (the value before the double operation) as a function of `Z3`, expressing `X1` and `Y1` (Jacobian coordinates) as functions of the affine coordinates `(x1, y1)`:
 ```
 Z3 = (Y1 + Z1)**2 - YY - ZZ
-Z3 = ((y1 * Z1**3)  + Z1)**2 - (y1 * Z1**3)**2 - Z1**2
-Z3 = (y1 * Z1**3)**2 + 2*(y1 * Z1**3)*Z1 + Z1**2 - (y1 * Z1**3)**2 - Z1**2
-Z3 = 2*(y1 * Z1**3)*Z1
+Z3 = (Y1**2 + 2 * Y1 * Z1 + Z1**2) - Y1**2 - Z1**2
+Z3 = 2 * Y1 * Z1
+Z3 = 2 * (y1 * Z1**3) * Z1
 Z3 = 2 * y1 * Z1**4
 Z1 = fourth_root(Z3 / (2 * y1))
 ```
 
-Let's denote by `Z_i` the `Z` coordinate of the `R_i` point after loop iteration `i` in the double-and-add algorithm: if `k_i = 0`, then `fourth_root(Z_i / (2 * y_i))` must have a solution. By logical equivalence, if `fourth_root(Zi / (2 * y1))` does not have a solution, then `k_i = 1`.
+Let's denote by `Z_i` the `Z` coordinate of the `R_i` point after loop iteration `i` in the double-and-add algorithm : we have then the relation `Z_{i+1} = fourth_root(Z_i / (2 * y_i))` (and let's not forget that iteration `i+1` comes **before** iteration `i` in the double-and-add algorithm).
 
-In 
+If `k_i = 0`, then `fourth_root(Z_i / (2 * y_i))` must have a solution. By logical equivalence, if `fourth_root(Zi / (2 * y_i))` does not have a solution, then `k_i = 1`.
+
+*N.B. : the term `y_i` the equations above corresponds to the affine coordinate of `R_i`. The data provided by the challenge contains the coordinates of `R_0 = kG` for each signature: we will be able to keep track of the affine coordinates of `R_i` in our approach.*
 
 ### "Add" algorithm
 
@@ -204,3 +207,31 @@ We do the same deductions for the "add" algorithm, represented bellow:
 ![](./imgs/alg3.png "add algorithm in Jacobian system")
 
 `(X1, Y1, Z1)` and `(X2, Y2, Z2)` being the coordinates of the points that are added together, and `(X3, Y3, Z3)` the resulting point.
+
+```
+Z3 = ((Z1 + Z2)**2 - Z1Z1 - Z2Z2) *  H
+Z3 = ((Z1**2 + 2 * Z1 * Z2 + Z2**2) - Z1**2 - Z2**2) *  (U2 - U1)
+Z3 = (2 * Z1 * Z2) *  (X2 * Z1Z1 - X1 * Z2Z2)
+Z3 = (2 * Z1 * Z2) *  (x2 * Z2**2 * Z1**2 - x1 * Z1**2 * Z2**2)
+Z3 = 2 * (Z1 * Z2)**3 *  (x2 - x1)
+```
+
+Reading the ECDSA signature algorithm, we note that the second point in the addition is always `G` (the generator of the curve `secp256k1`), and since it is constant, we can safely assume its Jacobian coordinates are simply `(x_G, y_G, 1)` (*i.e.* `Z_G = 1`).
+
+Let's denote by `T_i` the point `R_i` before the addition and after the doubling in the loop of the double-and-add algorithm. We express `Z_{T_i}` as a function of `Z_i` using the equation previously derived :
+
+```
+Z_i = 2 * (Z_{T_i} * Z_G)**3 *  (x_G - x_T)
+Z_i = 2 * Z_{T_i}**3 *  (x_G - x-T)
+Z_{T_i} = cube_root(Z_i / (2 * (x_G - x_T)))
+```
+
+Once again, if `k_i = 1`, then `cube_root(Z_i / (2 * (x_G - x_T)))` must have a solution. By logical equivalence, if `cube_root(Z_i / (2 * (x_G - x_T)))` does not have a solution, then `k_i = 0`.
+
+*N.B. : for those who eventually followed a bit too much the paper mentionned at the start of the write-up, here's a gotcha: the paper tells us to try and compute `cube_root(Z_i / (x_G - x_T))` (not `cube_root(Z_i / (2 * (x_G - x_T)))`), because the add algorithm in Jacobian coordinates is implemented a slightly different way on their target.*
+
+
+### Bits extraction
+For each `Z_0` extracted in the power trace, we can try and find solutions for `cube_root(Z_0 / (2 * (x_G - x-T)))` and `fourth_root(Z_0 / (2 * y_0))`. If one of them is impossible, we have successfully determined the bit `k_0`, and thus are able to compute `R_1` by computing `R_1 = R_0 / 2` if `k_0 = 0`, or `R_1 = (R_0 - G) / 2` if `k_0 = 1`.
+
+If both equations bear solutions, we can even explore the 2 possibilities hoping some "dead path" appear later (i.e. both `cube_root(Z_i / (2 * (x_G - x-T)))` and `fourth_root(Z_i / (2 * y_i))` have no solutions) allowing us to backtrack. This has been (no so elegantly) implemented in the script `second__recover_nonces_bits.py` (requires Sage).
