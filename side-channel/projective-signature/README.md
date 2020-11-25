@@ -235,3 +235,7 @@ Once again, if `k_i = 1`, then `cube_root(Z_i / (2 * (x_G - x_T)))` must have a 
 For each `Z_0` extracted in the power trace, we can try and find solutions for `cube_root(Z_0 / (2 * (x_G - x-T)))` and `fourth_root(Z_0 / (2 * y_0))`. If one of them is impossible, we have successfully determined the bit `k_0`, and thus are able to compute `R_1` by computing `R_1 = R_0 / 2` if `k_0 = 0`, or `R_1 = (R_0 - G) / 2` if `k_0 = 1`.
 
 If both equations bear solutions, we can even explore the 2 possibilities hoping some "dead path" appear later (i.e. both `cube_root(Z_i / (2 * (x_G - x-T)))` and `fourth_root(Z_i / (2 * y_i))` have no solutions) allowing us to backtrack. This has been (no so elegantly) implemented in the script `second__recover_nonces_bits.py` (requires Sage).
+
+
+## Find the private key`
+(in progress)
