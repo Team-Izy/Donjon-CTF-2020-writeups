@@ -1,4 +1,4 @@
-# Projective Signature (work in progress)
+# Projective Signature
 
 ## Challenge
 ```
